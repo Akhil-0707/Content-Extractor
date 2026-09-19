@@ -17,7 +17,7 @@ out/
 
 # Local data and model weights
 data/
-models/
+/models/
 *.gguf
 *.safetensors
 
