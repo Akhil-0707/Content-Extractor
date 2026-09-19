@@ -54,6 +54,21 @@ services:
     ports:
       - "8000:8000"
 
+  api-test:
+    build:
+      context: ./api
+      target: test
+    profiles: ["test"]
+    env_file: .env
+    volumes:
+      - ./api:/srv
+    entrypoint: ["sh", "scripts/test.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   web:
     build: ./web
     restart: unless-stopped
