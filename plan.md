@@ -60,13 +60,18 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [x] Install Docker Desktop + WSL 2 on the dev machine
 - [x] Verify `docker compose up` starts the full stack (API, web, Postgres + pgvector 0.8.6, Redis, MinIO)
 
-## Phase 1 — Database design
-- [ ] ER design: `users`, `roles`, `classes`, `class_members`, `class_access_codes`,
-      `documents`, `document_chunks` (vector), `content_documents`, `sessions`, `session_items`
-      (quiz / poll / content step), `quiz_questions`, `poll_events`, `responses`, `xp_ledger`,
-      `session_progress`, `session_summaries`, `content_requests`, `audit_log`
-- [ ] Migrations with Alembic
-- [ ] Seed script (one developer, one trainer, sample trainees)
+## Phase 1 — Database design ✅ DONE
+- [x] ER design — 20 tables in 4 domains (SQLAlchemy models in `api/app/models/`):
+      - Accounts: `users`, `refresh_tokens`, `classes`, `class_members`, `class_access_codes`
+      - Content: `documents`, `topics`, `document_chunks` (pgvector 1024-d, HNSW), `content_documents`
+      - Sessions: `training_sessions`, `session_items` (content / quiz / poll), `live_runs`, `responses`,
+        `xp_ledger`, `session_progress`, `session_summaries`
+      - Operations: `content_requests`, `agent_runs`, `model_versions`, `audit_log`
+- [x] Database-enforced rules: quiz must have an answer, XP for an item awarded once per trainee,
+      one initial-XP grant per class, positive time limits, one active model version
+- [x] Migrations with Alembic (async); applied automatically on API start; up/down/up tested
+- [x] Seed script (`python -m app.seed`): developer, trainer1, trainee1–3, demo class with initial XP;
+      random passwords written to git-ignored `api/data/seed_credentials.txt`
 
 ## Phase 2 — Authentication & authorization
 - [ ] Login page with three options: Trainee / Trainer / Developer (username + password)
