@@ -12,17 +12,20 @@ export const homeFor = (me: Me) => (me.must_change_password ? "/change-password"
  * not signed in → /login, must change password → /change-password, wrong role → their own dashboard.
  * The API enforces all of this too; this only keeps the UI consistent.
  */
-export function useSession(role?: Role): Me | null {
+export function useSession(role?: Role | Role[]): Me | null {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
+  const allowed = role === undefined ? null : Array.isArray(role) ? role : [role];
+  const allowedKey = allowed?.join(",");
 
   useEffect(() => {
     let cancelled = false;
+    const roles = allowedKey ? (allowedKey.split(",") as Role[]) : null;
     api<Me>("/auth/me")
       .then((user) => {
         if (cancelled) return;
-        if (user.must_change_password && role) router.replace("/change-password");
-        else if (role && user.role !== role) router.replace(homeFor(user));
+        if (user.must_change_password && roles) router.replace("/change-password");
+        else if (roles && !roles.includes(user.role)) router.replace(homeFor(user));
         else setMe(user);
       })
       .catch((err) => {
@@ -31,7 +34,7 @@ export function useSession(role?: Role): Me | null {
     return () => {
       cancelled = true;
     };
-  }, [role, router]);
+  }, [allowedKey, router]);
 
   return me;
 }
