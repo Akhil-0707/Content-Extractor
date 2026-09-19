@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,13 +7,21 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://training:change-me@localhost:5432/training"
     redis_url: str = "redis://localhost:6379/0"
+    cors_origins: list[str] = ["http://localhost:3000"]
 
     s3_endpoint_url: str = "http://localhost:9000"
     s3_bucket: str = "documents"
 
-    jwt_secret: str = "dev-only-secret"
+    # No default: the app refuses to start without a real secret
+    jwt_secret: str = Field(min_length=32)
     access_token_minutes: int = 15
     refresh_token_days: int = 7
+    cookie_secure: bool = False  # set true in production (HTTPS)
+
+    login_rate_limit_per_minute: int = 10
+    max_failed_logins: int = 5
+    lockout_minutes: int = 15
+    min_password_length: int = 10
 
     llm_base_url: str = "http://localhost:8080/v1"
     llm_model: str = ""
