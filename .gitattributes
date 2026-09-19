@@ -1,0 +1,5 @@
+# Keep LF endings in the repo and working tree; scripts run inside Linux containers
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
