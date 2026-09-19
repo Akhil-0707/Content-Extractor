@@ -54,8 +54,11 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [x] Create project rules file and `plan.md`
 - [x] Confirm open questions (stack, hosting, model tuning approach, GitHub repo)
 - [x] Confirm on-prem server hardware (GPU model / VRAM) for local inference
-- [ ] Initialise GitHub repository, `README.md`, `.env.example`, license
-- [ ] Docker Compose skeleton (Postgres, Redis, MinIO, API, web)
+- [x] Initialise GitHub repository, `README.md`, `.env.example` (no license for now)
+- [x] Docker Compose skeleton (Postgres, Redis, MinIO, API, web)
+- [x] API skeleton (FastAPI `/health`) and web skeleton (Next.js 15.5.25, patched) — both build locally
+- [ ] Install Docker Desktop + WSL 2 on the dev machine
+- [ ] Verify `docker compose up` starts the full stack
 
 ## Phase 1 — Database design
 - [ ] ER design: `users`, `roles`, `classes`, `class_members`, `class_access_codes`,
