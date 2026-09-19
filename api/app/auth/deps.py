@@ -46,3 +46,5 @@ def require_roles(*roles: UserRole) -> Callable[..., Awaitable[User]]:
 CurrentUser = Annotated[User, Depends(get_current_user)]
 ActiveUser = Annotated[User, Depends(get_active_user)]
 Developer = Annotated[User, Depends(require_roles(UserRole.DEVELOPER))]
+Staff = Annotated[User, Depends(require_roles(UserRole.TRAINER, UserRole.DEVELOPER))]
+Trainee = Annotated[User, Depends(require_roles(UserRole.TRAINEE))]

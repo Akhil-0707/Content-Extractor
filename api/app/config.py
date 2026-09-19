@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     max_failed_logins: int = 5
     lockout_minutes: int = 15
     min_password_length: int = 10
+    join_rate_limit_per_minute: int = 10
 
     llm_base_url: str = "http://localhost:8080/v1"
     llm_model: str = ""
