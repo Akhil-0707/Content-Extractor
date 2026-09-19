@@ -1,0 +1,28 @@
+# Secrets
+.env
+*.env.local
+kaggle.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Local data and model weights
+data/
+models/
+*.gguf
+*.safetensors
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
