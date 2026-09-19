@@ -83,13 +83,18 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [x] Rate limiting (10 logins / min / IP, Redis) + account lockout (5 failures → 15 min)
 - [x] Audit log helper; logins, failures, password changes and account changes recorded
 - [x] Developer console v1: create, deactivate / reactivate, unlock accounts
-- [x] 13 API tests (`docker compose run --rm -v ./api:/srv api sh scripts/test.sh`)
+- [x] 13 API tests (run all tests with `docker compose run --rm api-test`)
 
-## Phase 3 — Classes & access management
-- [ ] Trainer/Developer: create classes, one class per session track
-- [ ] Access grants: invite codes / direct assignment of existing trainee accounts to a class
-- [ ] Trainee: join class via access code, see only assigned classes
-- [ ] Developer: create and manage all user accounts and classes
+## Phase 3 — Classes & access management ✅ DONE
+- [x] Trainer/Developer: create classes (trainers own what they create; developer assigns a trainer)
+- [x] Access grants: direct assignment of trainee accounts + 8-character access codes with optional
+      expiry and max uses; revocable; single-use codes can't be double-spent (atomic use count)
+- [x] Trainee: join class via access code (rate-limited), see only their non-draft classes and their XP
+- [x] Starting XP granted once per trainee per class (survives remove / re-add)
+- [x] Class-level permissions (`app/access.py`): classes you can't see return 404
+- [x] Class status: draft (hidden from trainees) / active / archived
+- [x] Developer: all classes, reassign trainer; users page from Phase 2
+- [x] 10 more API tests (23 total)
 
 ## Phase 4 — Document ingestion pipeline (Agents 1–2)
 - [ ] Resumable chunked uploads (tus protocol) for files up to 3 GB, straight to object storage
