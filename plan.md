@@ -8,7 +8,7 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 
 ---
 
-## Proposed stack (to confirm)
+## Stack (confirmed)
 
 | Layer | Choice |
 |---|---|
@@ -19,19 +19,31 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 | Database | PostgreSQL + `pgvector` (relational data + embeddings in one place) |
 | File storage | S3-compatible object storage (MinIO locally) |
 | Auth | Username + password (Argon2 hashing), JWT access + refresh tokens, role-based access control |
-| LLM (all agents) | Open-weight model, QLoRA fine-tuned: Qwen3-8B-Instruct (primary) — served locally with vLLM (Ollama for low-GPU dev machines) |
-| Vision / slides | Local OCR (PaddleOCR / Tesseract) + optional local vision model (Qwen2.5-VL-7B) for diagrams |
-| Speech-to-text | faster-whisper (large-v3), local |
-| Embeddings | bge-m3, local |
-| Fine-tuning | Unsloth + QLoRA on Kaggle GPUs (T4 x2 / P100), adapter merged and pulled back on-prem |
+| LLM (all agents) | Qwen3-4B-Instruct, QLoRA fine-tuned, exported to GGUF Q4_K_M (~2.5 GB) — served locally with llama.cpp server (OpenAI-compatible API) |
+| Vision / slides | Local OCR on CPU (PaddleOCR / Tesseract); text from PDF/PPTX extracted directly |
+| Speech-to-text | faster-whisper `distil-large-v3` int8 on GPU (~1.5 GB VRAM); CPU fallback |
+| Embeddings | bge-m3 on CPU |
+| Web search | Self-hosted SearXNG — **topic keywords only**, never document text |
+| Fine-tuning | Unsloth + QLoRA on Kaggle GPUs (T4 x2 / P100), adapter merged, quantized and pulled back on-prem |
 | Deployment | Docker Compose, **on-premises only** |
+
+### On-prem hardware budget — RTX 3050, 4 GB VRAM
+
+- 4 GB fits **one** GPU model at a time: the 4B LLM (~2.5 GB + context) **or** Whisper (~1.5 GB).
+- A **GPU lock** in the job queue runs GPU jobs one at a time; embeddings and OCR stay on CPU.
+- Quizzes, polls and content documents are **generated ahead of time**, so live classes don't depend on
+  the LLM. At runtime the LLM only writes short summaries and reports.
+- Expected processing: a 3-hour video ≈ 20–40 min transcription plus generation; fine for upload-ahead use.
+- Upgrade path: with a ≥12 GB GPU, switch to the 8B model using the same pipeline (config change only).
 
 ## Project constraints (confirmed)
 
 - **Single company per deployment** — no multi-tenant separation needed.
 - **Developer creates all accounts** (trainees and trainers); trainers only grant class access.
 - **No document ever leaves the premises for an external AI service** — every model runs locally.
+  Only exception: web searches that send topic keywords (no document text).
 - **Real fine-tuned model** required; training runs on Kaggle GPU using the owner's Kaggle API token.
+  Uploading the tuning content to Kaggle is approved.
 - **Two session modes**, chosen by the user: *live* (trainer-driven, synchronized timers) and *self-paced*.
 - **Scale**: ~60 trainees per class; files up to 3 GB; videos up to 3 hours.
 
@@ -41,7 +53,7 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [x] Define requirements and roles
 - [x] Create project rules file and `plan.md`
 - [x] Confirm open questions (stack, hosting, model tuning approach, GitHub repo)
-- [ ] Confirm on-prem server hardware (GPU model / VRAM) for local inference
+- [x] Confirm on-prem server hardware (GPU model / VRAM) for local inference
 - [ ] Initialise GitHub repository, `README.md`, `.env.example`, license
 - [ ] Docker Compose skeleton (Postgres, Redis, MinIO, API, web)
 
@@ -78,8 +90,8 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 
 ## Phase 5 — Content document generation (Agent 3)
 - [ ] **Knowledge Enrichment Agent**: produce a content document per topic (summary, key concepts,
-      definitions, examples) + clearly marked "additional information" section (local model knowledge
-      and/or a developer-curated reference library — no documents sent outside)
+      definitions, examples) + clearly marked "additional information" section from local model knowledge,
+      a developer-curated reference library, and SearXNG web search (topic keywords only)
 - [ ] Source citations for every section
 - [ ] Trainer view + export (PDF / DOCX)
 - [ ] Developer can edit / regenerate
@@ -127,14 +139,15 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [ ] Receive tuning content from project owner
 - [ ] Build instruction dataset: (source excerpt → quiz / poll / content document / summary) pairs
 - [ ] Build held-out evaluation set
-- [ ] Kaggle notebook: Unsloth + QLoRA fine-tune of Qwen3-8B-Instruct; pushed and run via Kaggle CLI
-- [ ] Download LoRA adapter, merge, quantize (AWQ / GGUF) for on-prem serving
+- [ ] Kaggle notebook: Unsloth + QLoRA fine-tune of Qwen3-4B-Instruct; pushed and run via Kaggle CLI
+- [ ] Download LoRA adapter, merge, quantize to GGUF Q4_K_M for on-prem serving
 - [ ] Compare base vs fine-tuned on evaluation set; keep adapter versions in a model registry table
 
 ## Phase 12b — Local model serving
-- [ ] vLLM server (OpenAI-compatible API) inside the on-prem network; no outbound internet for AI services
-- [ ] faster-whisper and bge-m3 services on the same GPU host
-- [ ] Job queue throttling so long video jobs don't block live-session requests
+- [ ] llama.cpp server (OpenAI-compatible API) inside the on-prem network; no outbound AI services
+- [ ] faster-whisper (GPU) and bge-m3 (CPU) services on the same host
+- [ ] GPU lock: one GPU job at a time; long video jobs never block live-session requests
+- [ ] SearXNG container for keyword-only web search
 
 ## Phase 13 — Testing, security hardening & deployment
 - [ ] Unit + integration tests (API, agents with mocked LLM), end-to-end tests (Playwright)
