@@ -73,13 +73,17 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [x] Seed script (`python -m app.seed`): developer, trainer1, trainee1–3, demo class with initial XP;
       random passwords written to git-ignored `api/data/seed_credentials.txt`
 
-## Phase 2 — Authentication & authorization
-- [ ] Login page with three options: Trainee / Trainer / Developer (username + password)
-- [ ] Accounts created only by the developer (no self sign-up); forced password change on first login
-- [ ] Password hashing (Argon2), JWT access + refresh tokens (httpOnly cookies)
-- [ ] Role-based access control middleware (per-route and per-class checks)
-- [ ] Rate limiting + account lockout on failed logins
-- [ ] Audit log for sensitive actions (content edits, deletions, access grants)
+## Phase 2 — Authentication & authorization ✅ DONE
+- [x] Login page with three options: Trainee / Trainer / Developer (username + password)
+- [x] Accounts created only by the developer (no self sign-up); forced password change on first login
+- [x] Password hashing (Argon2), JWT access token (15 min) + rotating refresh token (7 days), both httpOnly
+      cookies; replayed refresh tokens end every session of that user
+- [x] Role-based access control (`require_roles` dependency on every protected route; per-class checks
+      are added with the class routes in Phase 3)
+- [x] Rate limiting (10 logins / min / IP, Redis) + account lockout (5 failures → 15 min)
+- [x] Audit log helper; logins, failures, password changes and account changes recorded
+- [x] Developer console v1: create, deactivate / reactivate, unlock accounts
+- [x] 13 API tests (`docker compose run --rm -v ./api:/srv api sh scripts/test.sh`)
 
 ## Phase 3 — Classes & access management
 - [ ] Trainer/Developer: create classes, one class per session track
