@@ -49,7 +49,7 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 
 ---
 
-## Phase 0 — Planning & repository setup
+## Phase 0 — Planning & repository setup ✅ DONE
 - [x] Define requirements and roles
 - [x] Create project rules file and `plan.md`
 - [x] Confirm open questions (stack, hosting, model tuning approach, GitHub repo)
@@ -57,8 +57,8 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [x] Initialise GitHub repository, `README.md`, `.env.example` (no license for now)
 - [x] Docker Compose skeleton (Postgres, Redis, MinIO, API, web)
 - [x] API skeleton (FastAPI `/health`) and web skeleton (Next.js 15.5.25, patched) — both build locally
-- [ ] Install Docker Desktop + WSL 2 on the dev machine
-- [ ] Verify `docker compose up` starts the full stack
+- [x] Install Docker Desktop + WSL 2 on the dev machine
+- [x] Verify `docker compose up` starts the full stack (API, web, Postgres + pgvector 0.8.6, Redis, MinIO)
 
 ## Phase 1 — Database design
 - [ ] ER design: `users`, `roles`, `classes`, `class_members`, `class_access_codes`,
