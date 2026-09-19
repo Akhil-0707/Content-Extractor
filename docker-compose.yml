@@ -41,7 +41,9 @@ services:
       - "9001:9001"
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      target: base
     restart: unless-stopped
     env_file: .env
     depends_on:
