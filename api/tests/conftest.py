@@ -1,5 +1,6 @@
 """Tests run against a real Postgres database and Redis (see scripts/test.sh), never the dev database."""
 
+import inspect
 from collections.abc import AsyncIterator, Awaitable, Callable
 
 import pytest
@@ -22,9 +23,11 @@ MakeUser = Callable[..., Awaitable[User]]
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    # One event loop for the whole run, shared with the app's DB and Redis connection pools
+    # One event loop for the whole run, shared with the app's DB and Redis connection pools.
+    # Sync tests (the parsers) must not be marked, or pytest-asyncio warns on every one.
     for item in items:
-        item.add_marker(pytest.mark.asyncio(loop_scope="session"), append=False)
+        if inspect.iscoroutinefunction(getattr(item, "function", None)):
+            item.add_marker(pytest.mark.asyncio(loop_scope="session"), append=False)
 
 
 def use_only_refresh_cookie(client: AsyncClient, token: str) -> None:
