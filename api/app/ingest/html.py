@@ -37,15 +37,17 @@ def parse(raw: bytes) -> ParsedDocument:
             continue
         seen.add(key)
 
+        level = None
         if name in HEADING_TAGS:
             kind = BlockKind.HEADING
+            level = int(name[1])
         elif name == "pre":
             kind = BlockKind.CODE
         elif name in ("td", "th"):
             kind = BlockKind.TABLE
         else:
             kind = BlockKind.TEXT
-        blocks.append(Block(kind, text, {"element": index}))
+        blocks.append(Block(kind, text, {"element": index}, level=level))
 
     title = (soup.title.get_text(strip=True) if soup.title else "") or None
     if not title:

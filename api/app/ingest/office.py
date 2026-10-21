@@ -27,8 +27,15 @@ def parse_docx(raw: bytes) -> ParsedDocument:
         if not text:
             continue
         style = (paragraph.style.name if paragraph.style else "").lower()
-        kind = BlockKind.HEADING if style.startswith(HEADING_STYLE_PREFIX) else BlockKind.TEXT
-        blocks.append(Block(kind, text, {"paragraph": index}))
+        level = None
+        if style.startswith(HEADING_STYLE_PREFIX):
+            kind = BlockKind.HEADING
+            # "Heading 2" -> 2; unnumbered styles such as "Title" become level 1
+            trailing = style.removeprefix(HEADING_STYLE_PREFIX).strip()
+            level = int(trailing) if trailing.isdigit() else 1
+        else:
+            kind = BlockKind.TEXT
+        blocks.append(Block(kind, text, {"paragraph": index}, level=level))
 
     for table_index, table in enumerate(document.tables):
         rendered = _render_table([[cell.text for cell in row.cells] for row in table.rows])
@@ -64,7 +71,8 @@ def parse_pptx(raw: bytes) -> ParsedDocument:
         ref = {"slide": number}
         title_shape = slide.shapes.title
         if title_shape is not None and (title_shape.text or "").strip():
-            blocks.append(Block(BlockKind.HEADING, title_shape.text, dict(ref)))
+            # Every slide title is a peer, so each one starts a topic at the same depth
+            blocks.append(Block(BlockKind.HEADING, title_shape.text, dict(ref), level=1))
 
         for shape in slide.shapes:
             if shape is title_shape or not shape.has_text_frame:

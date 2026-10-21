@@ -32,6 +32,8 @@ class Block:
     source_ref: dict = field(default_factory=dict)
     # Code blocks only: "python", "sql", …
     language: str | None = None
+    # Headings only: 1 for `#`, 2 for `##`. Drives topic nesting.
+    level: int | None = None
 
     def __post_init__(self) -> None:
         self.text = self.text.strip()
@@ -72,9 +74,17 @@ def split_markdown(body: str, source_ref: dict) -> list[Block]:
             buffer.clear()
 
     for line in body.splitlines():
-        if HEADING_RE.match(line):
+        match = HEADING_RE.match(line)
+        if match:
             flush()
-            blocks.append(Block(BlockKind.HEADING, line.lstrip("# ").strip(), dict(source_ref)))
+            blocks.append(
+                Block(
+                    BlockKind.HEADING,
+                    line.lstrip("# ").strip(),
+                    dict(source_ref),
+                    level=len(match.group(1)),
+                )
+            )
         else:
             buffer.append(line)
     flush()
