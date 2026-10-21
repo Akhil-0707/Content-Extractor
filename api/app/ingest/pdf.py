@@ -26,8 +26,9 @@ logger = logging.getLogger(__name__)
 # Image-only slides score 0; a sparse real page still clears it comfortably.
 MIN_CHARS_PER_PAGE = 40
 
-# Rendering above the page's natural size helps OCR on slide text
-OCR_RENDER_SCALE = 2.0
+# Rendering above the page's natural size helps OCR on slide text. Measured on real
+# decks: 3x recovers display titles that 2x breaks into fragments.
+OCR_RENDER_SCALE = 3.0
 
 MAX_PAGES = 2_000
 
@@ -53,14 +54,16 @@ def parse(raw: bytes, *, allow_ocr: bool = True) -> ParsedDocument:
     except Exception as exc:
         raise ParseError(f"Not a readable PDF: {exc}") from exc
 
-    if document.page_count > MAX_PAGES:
+    page_count = document.page_count
+    if page_count > MAX_PAGES:
         document.close()
-        raise ParseError(f"PDF has too many pages ({document.page_count} > {MAX_PAGES})")
+        raise ParseError(f"PDF has too many pages ({page_count} > {MAX_PAGES})")
 
     blocks: list[Block] = []
     ocr_pages: list[int] = []
     text_pages = 0
     failed_ocr = 0
+    unreadable: list[int] = []
 
     with document:
         for number, page in enumerate(document, start=1):
@@ -73,6 +76,7 @@ def parse(raw: bytes, *, allow_ocr: bool = True) -> ParsedDocument:
                 continue
 
             if not allow_ocr:
+                unreadable.append(number)
                 continue
             try:
                 recovered = _clean(ocr_image(_render(page)))
@@ -86,9 +90,10 @@ def parse(raw: bytes, *, allow_ocr: bool = True) -> ParsedDocument:
             if recovered.strip():
                 ocr_pages.append(number)
                 blocks.append(Block(BlockKind.OCR_TEXT, recovered, ref))
+            else:
+                unreadable.append(number)
 
         title = (document.metadata or {}).get("title") or None
-        page_count = document.page_count
 
     meta = {
         "source": "pdf",
@@ -101,6 +106,9 @@ def parse(raw: bytes, *, allow_ocr: bool = True) -> ParsedDocument:
     if ocr_pages:
         # Flag for the trainer: OCR text is less reliable and worth a skim
         meta["ocr_page_numbers"] = ocr_pages
+    if unreadable:
+        # Pages that yielded nothing at all, so a trainer can see what was lost
+        meta["unreadable_pages"] = unreadable
 
     if not title:
         title = next((b.text for b in blocks if b.kind is BlockKind.HEADING), None)

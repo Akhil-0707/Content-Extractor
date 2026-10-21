@@ -24,18 +24,16 @@ def parse(raw: bytes) -> ParsedDocument:
         tag.decompose()
 
     blocks: list[Block] = []
-    seen: set[tuple[str, str]] = set()
 
     for index, element in enumerate(soup.find_all(CONTENT_TAGS)):
+        # Emit only the innermost element: a <li> inside a <td> would otherwise have its
+        # text counted twice, once for each tag.
+        if element.find(CONTENT_TAGS) is not None:
+            continue
         text = " ".join(element.get_text(" ", strip=True).split())
         if not text:
             continue
         name = element.name
-        # Nested elements (a <li> inside a <td>) would otherwise be emitted twice
-        key = (name, text)
-        if key in seen:
-            continue
-        seen.add(key)
 
         level = None
         if name in HEADING_TAGS:
