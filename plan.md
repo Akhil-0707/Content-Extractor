@@ -200,6 +200,14 @@ Two findings that reorder the work:
 - [ ] SearXNG container for keyword-only web search
 
 ## Phase 13 — Testing, security hardening & deployment
+
+### Final checkpoint — content disclosure review (must happen before sign-off)
+- [ ] Audit everything derived from `/content/`: extracted chunks, generated quizzes and polls, content
+      documents, summaries, tuning datasets in `/tuning/`, evaluation sets, logs and DB dumps
+- [ ] Present the owner with a list of every candidate file or dataset, and ask explicitly which ones (if
+      any) to push. Default for all of them is **do not push**; push only what the owner names.
+- [ ] Confirm the published repo contains no course material or derived text (`git log --all` + remote scan)
+
 - [ ] Unit + integration tests (API, agents with mocked LLM), end-to-end tests (Playwright)
 - [ ] Security review: OWASP top 10, file-upload hardening, secrets management, HTTPS
 - [ ] Load test live sessions (concurrent polls)
