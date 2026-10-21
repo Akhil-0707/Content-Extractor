@@ -97,13 +97,43 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 - [x] 10 more API tests (23 total)
 
 ## Phase 4 — Document ingestion pipeline (Agents 1–2)
+
+### Corpus survey (first real batch, 2026-10-22)
+Three courses in `/content/` (local only, never pushed): GEN AI, Data science with Python, Databricks.
+380 files / 175 MB once the 19 zips are expanded. Measured, not assumed:
+
+| Source | Count | Notes |
+|---|---|---|
+| Databricks HTML exports (inside zips) | 269 | Biggest source, 3.4 M chars, 2 421 cells |
+| Jupyter notebooks | 29 | 152 K chars markdown + 395 K code |
+| PDF with text layer | 17 | 24–263 text ops/page |
+| PDF, image-only slides | 14 | ~180 pages, **zero** text — OCR required |
+| PDF, thin text | 7 | Mostly diagrams; OCR as fallback |
+| CSV / DOCX / standalone HTML | 6 | Lab datasets + 1 lab guide |
+| RAR archives | 2 | Skipped for now (owner's call) |
+| Video / audio | 0 | None yet; parser deferred until samples exist |
+
+Two findings that reorder the work:
+- **Databricks HTML hides its content**: the real notebook sits in a `__DATABRICKS_NOTEBOOK_MODEL`
+  variable, base64 → URL-decoded → JSON. Plain tag-stripping yields config noise. Decoder verified on
+  all 269 files.
+- **OCR is on the critical path, not optional**: 14 decks are full-page JPEG screenshots of slides
+  (1376×745, one image per page). Confirmed visually — titles and body text exist only as pixels.
+
+### Tasks
+- [ ] Parsers, ordered by volume in this corpus:
+  - [ ] Databricks HTML export (base64 → URL-decode → JSON; markdown + code cells, keep cell order)
+  - [ ] Jupyter notebook (markdown as teaching text, code as examples, strip bulky outputs)
+  - [ ] PDF text layer (PyMuPDF), with per-page source refs
+  - [ ] PDF OCR fallback when a page yields < ~20 text ops (PaddleOCR/Tesseract on CPU)
+  - [ ] DOCX, CSV (schema + sample rows), standalone HTML
+  - [ ] ZIP expansion with path traversal + zip-bomb guards
+  - [ ] Video/audio (ffmpeg + faster-whisper) — deferred until sample files exist
 - [ ] Resumable chunked uploads (tus protocol) for files up to 3 GB, straight to object storage
 - [ ] File-type validation, ClamAV virus scan
-- [ ] **Ingestion Agent**: PDF (PyMuPDF), PPTX (python-pptx), DOCX (python-docx), images (OCR / vision),
-      video & audio (ffmpeg + faster-whisper transcript + scene-change key frames); 3-hour videos
-      processed in segments with progress reporting
 - [ ] **Structuring Agent**: split into topics → subtopics → ordered learning steps; chunk + embed into pgvector
 - [ ] Processing status shown to trainer (queued / processing / ready / failed)
+- [ ] Parser test suite using small synthetic fixtures (never excerpts of `/content/`)
 
 ## Phase 5 — Content document generation (Agent 3)
 - [ ] **Knowledge Enrichment Agent**: produce a content document per topic (summary, key concepts,
@@ -153,8 +183,11 @@ Legend: `[ ]` pending · `[x]` done · phase heading gets `✅ DONE` when every 
 
 ## Phase 12 — Model fine-tuning (Kaggle GPU)
 - [ ] Owner places Kaggle API token in `~/.kaggle/kaggle.json` (never committed, never pasted in chat)
-- [ ] Receive tuning content from project owner
-- [ ] Build instruction dataset: (source excerpt → quiz / poll / content document / summary) pairs
+- [x] Receive tuning content from project owner (first batch, see Phase 4 corpus survey)
+- [ ] Build instruction dataset by **bootstrapping**: no ready-made Q&A pairs exist, so the pipeline
+      generates draft quizzes / content docs from the corpus, the trainer corrects them in the review UI,
+      and the corrected versions become the tuning pairs (house style, not generic)
+- [ ] Dataset stays in `/tuning/` — local only, never committed
 - [ ] Build held-out evaluation set
 - [ ] Kaggle notebook: Unsloth + QLoRA fine-tune of Qwen3-4B-Instruct; pushed and run via Kaggle CLI
 - [ ] Download LoRA adapter, merge, quantize to GGUF Q4_K_M for on-prem serving
