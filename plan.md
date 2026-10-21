@@ -121,17 +121,30 @@ Two findings that reorder the work:
   (1376×745, one image per page). Confirmed visually — titles and body text exist only as pixels.
 
 ### Tasks
-- [ ] Parsers, ordered by volume in this corpus:
-  - [ ] Databricks HTML export (base64 → URL-decode → JSON; markdown + code cells, keep cell order)
-  - [ ] Jupyter notebook (markdown as teaching text, code as examples, strip bulky outputs)
-  - [ ] PDF text layer (PyMuPDF), with per-page source refs
-  - [ ] PDF OCR fallback when a page yields < ~20 text ops (PaddleOCR/Tesseract on CPU)
-  - [ ] DOCX, CSV (schema + sample rows), standalone HTML
-  - [ ] ZIP expansion with path traversal + zip-bomb guards
+- [x] Parsers, ordered by volume in this corpus:
+  - [x] Databricks HTML export (base64 → URL-decode → JSON) — verified on all 269 files
+  - [x] Jupyter notebook (markdown as teaching text, code as examples, outputs skipped) — 29/29
+  - [x] PDF text layer (PyMuPDF), per-page source refs — **written, not yet run** (see below)
+  - [x] PDF OCR fallback per page when the text layer is thin (Tesseract on CPU, keeping the 4 GB
+        GPU free for Whisper and the LLM) — **written, not yet run**
+  - [x] DOCX / PPTX (incl. speaker notes), CSV (schema + sample rows, not the whole dataset),
+        standalone HTML — **written, not yet run**
+  - [x] ZIP expansion with path-traversal, zip-bomb, entry-count and total-size guards; skipped
+        members are reported back with a reason rather than vanishing
+  - [x] Routing by content rather than extension (a PDF named `.csv` is still a PDF)
   - [ ] Video/audio (ffmpeg + faster-whisper) — deferred until sample files exist
+- [ ] **Blocked**: verify the PDF/Office/HTML parsers against the real corpus. Their four libraries are
+      in `requirements.txt` but could not be installed — Docker Desktop was mid-update, so Docker Hub
+      was unreachable. Rerun `docker compose build api api-test` once the update finishes.
+- [ ] Add Tesseract to the API image (~50 MB) so the OCR fallback has an engine
 - [ ] Resumable chunked uploads (tus protocol) for files up to 3 GB, straight to object storage
 - [ ] File-type validation, ClamAV virus scan
-- [ ] **Structuring Agent**: split into topics → subtopics → ordered learning steps; chunk + embed into pgvector
+- [x] **Structuring Agent** (`app/ingest/structure.py`): headings drive a nested topic tree; material
+      without headings falls back to page or size splitting; topics are cut into overlapping chunks that
+      keep their source references. Deterministic by design — the model is not asked to outline a
+      document it could mis-transcribe. Measured on the real corpus: 298 documents → 3,296 topics,
+      5,539 chunks, median 543 chars, none over the 2,000 cap, no empty topics or orphan chunks.
+- [ ] Embed chunks into pgvector (bge-m3) and persist topics / chunks to the database
 - [ ] Processing status shown to trainer (queued / processing / ready / failed)
 - [ ] Parser test suite using small synthetic fixtures (never excerpts of `/content/`)
 
