@@ -124,19 +124,35 @@ Two findings that reorder the work:
 - [x] Parsers, ordered by volume in this corpus:
   - [x] Databricks HTML export (base64 → URL-decode → JSON) — verified on all 269 files
   - [x] Jupyter notebook (markdown as teaching text, code as examples, outputs skipped) — 29/29
-  - [x] PDF text layer (PyMuPDF), per-page source refs — **written, not yet run** (see below)
-  - [x] PDF OCR fallback per page when the text layer is thin (Tesseract on CPU, keeping the 4 GB
-        GPU free for Whisper and the LLM) — **written, not yet run**
+  - [x] PDF text layer (PyMuPDF), per-page source refs — verified: 38/38 files, 358 pages
+  - [x] PDF OCR fallback per page when the text layer is thin (Tesseract 5.5 on CPU, keeping the
+        4 GB GPU free for Whisper and the LLM) — verified: 281 pages recovered from image-only decks.
+        Tuned on real slides: single-column mode at 3x render, since the default fragments display
+        titles. Lines with no readable word are dropped, because OCR reports line-art diagrams as
+        character debris. Cost: ~2 s/page, so a 15-page deck takes ~34 s (one-time, at upload).
   - [x] DOCX / PPTX (incl. speaker notes), CSV (schema + sample rows, not the whole dataset),
-        standalone HTML — **written, not yet run**
+        standalone HTML — verified on the corpus (1 DOCX, 4 CSV, 1 HTML; no PPTX in this batch)
   - [x] ZIP expansion with path-traversal, zip-bomb, entry-count and total-size guards; skipped
         members are reported back with a reason rather than vanishing
   - [x] Routing by content rather than extension (a PDF named `.csv` is still a PDF)
   - [ ] Video/audio (ffmpeg + faster-whisper) — deferred until sample files exist
-- [ ] **Blocked**: verify the PDF/Office/HTML parsers against the real corpus. Their four libraries are
-      in `requirements.txt` but could not be installed — Docker Desktop was mid-update, so Docker Hub
-      was unreachable. Rerun `docker compose build api api-test` once the update finishes.
-- [ ] Add Tesseract to the API image (~50 MB) so the OCR fallback has an engine
+- [x] Tesseract + English language data installed in the API image
+- [x] 113 tests passing (`docker compose run --rm api-test`)
+
+### Corpus coverage after Phase 4 parsers
+| Source | Files | Recovered |
+|---|---|---|
+| Databricks HTML exports | 269 | 3.39 M chars |
+| Jupyter notebooks | 29 | 546 K chars |
+| PDF (text layer + OCR) | 38 | 304 K chars — 358 pages read, 281 OCR'd |
+| Standalone HTML | 1 | 33 K chars |
+| DOCX | 1 | 5 K chars |
+| CSV | 4 | schema + samples |
+
+**Build note (dev machine):** the image build was killed out of memory twice. The host has 15.3 GB
+with ~2.5 GB free in practice, and Docker's VM is allocated 8 GB. `docker builder prune` reclaimed
+7.8 GB and the build then succeeded. Git pushes also fail with `getaddrinfo() thread failed to start`
+under this pressure; `docker compose stop`, push, `docker compose start` clears it.
 - [ ] Resumable chunked uploads (tus protocol) for files up to 3 GB, straight to object storage
 - [ ] File-type validation, ClamAV virus scan
 - [x] **Structuring Agent** (`app/ingest/structure.py`): headings drive a nested topic tree; material
