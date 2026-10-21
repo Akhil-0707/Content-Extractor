@@ -53,7 +53,13 @@ def test_split_markdown_blocks_do_not_share_source_ref():
 
 
 def test_blank_blocks_are_dropped():
-    assert split_markdown("# H\n\n   \n\n", {}) == [Block(BlockKind.HEADING, "H", {})]
+    assert split_markdown("# H\n\n   \n\n", {}) == [Block(BlockKind.HEADING, "H", {}, level=1)]
+
+
+@pytest.mark.parametrize(("markup", "level"), [("# A", 1), ("### A", 3), ("###### A", 6)])
+def test_heading_level_is_recorded_for_nesting(markup, level):
+    (block,) = split_markdown(markup, {})
+    assert block.level == level
 
 
 # ---------- databricks ----------
