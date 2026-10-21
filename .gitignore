@@ -18,6 +18,10 @@ out/
 # Local data and model weights
 data/
 /models/
+
+# Source training material: proprietary company content, never published
+/content/
+/tuning/
 *.gguf
 *.safetensors
 
