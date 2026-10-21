@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import re
 import shutil
 import subprocess
 
@@ -20,6 +21,15 @@ logger = logging.getLogger(__name__)
 TESSERACT = "tesseract"
 LANGUAGE = "eng"
 TIMEOUT_SECONDS = 120
+
+# "Assume a single column of text of variable sizes" — measured as the best fit for
+# slides, which mix a large title with smaller body text. The default (3) fragments
+# display titles; sparse modes (11/12) read line-art diagrams as streams of junk.
+PAGE_SEGMENTATION_MODE = "4"
+
+# A real word: three or more letters in a row. Diagram edges and stray marks come back
+# as one- and two-letter fragments, so a line containing none is noise rather than text.
+WORD_RE = re.compile(r"[A-Za-z]{3,}")
 
 
 class OcrUnavailable(Exception):
@@ -39,7 +49,7 @@ def ocr_image(png: bytes) -> str:
         )
 
     result = subprocess.run(
-        [TESSERACT, "stdin", "stdout", "-l", LANGUAGE, "--psm", "3"],
+        [TESSERACT, "stdin", "stdout", "-l", LANGUAGE, "--psm", PAGE_SEGMENTATION_MODE],
         input=png,
         capture_output=True,
         timeout=TIMEOUT_SECONDS,
@@ -48,4 +58,15 @@ def ocr_image(png: bytes) -> str:
     if result.returncode != 0:
         message = result.stderr.decode("utf-8", "replace").strip()
         raise RuntimeError(f"Tesseract failed: {message[:200]}")
-    return result.stdout.decode("utf-8", "replace")
+    return drop_noise(result.stdout.decode("utf-8", "replace"))
+
+
+def drop_noise(text: str) -> str:
+    """Remove lines that contain no readable word.
+
+    Slides put text over illustrations, and OCR reports the drawing's edges as short
+    character fragments. Keeping them would feed nonsense to the quiz writer. A line
+    survives if it holds at least one run of three or more letters, which keeps short
+    real headings such as "Part 2" while dropping debris like "=e ' Ss eR i".
+    """
+    return "\n".join(line for line in text.splitlines() if WORD_RE.search(line))
